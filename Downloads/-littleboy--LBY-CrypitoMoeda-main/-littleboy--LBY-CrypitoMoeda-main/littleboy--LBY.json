@@ -1,0 +1,9 @@
+{
+  "chainId": 1,
+  "address": "0x4e3b...92f3",  // Este é o endereço de contrato real do seu token
+  "symbol": "LBY",
+  "name": "LittleBoy Token",
+  "decimals": 18,
+  "logoURI": "https://github.com/liroboy/liroboy-LBY/raw/liroboy/001.jpg",
+  "tags": ["ERC20"]
+}
