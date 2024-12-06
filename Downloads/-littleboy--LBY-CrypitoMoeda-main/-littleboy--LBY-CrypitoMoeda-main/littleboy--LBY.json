@@ -1,9 +1,18 @@
-{
-  "chainId": 1,
-  "address": "0x4e3b...92f3",  // Este é o endereço de contrato real do seu token
-  "symbol": "LBY",
-  "name": "LittleBoy Token",
-  "decimals": 18,
-  "logoURI": "https://github.com/liroboy/liroboy-LBY/raw/liroboy/001.jpg",
-  "tags": ["ERC20"]
+import json
+
+# Dados do token para uma blockchain própria
+token_data = {
+    "chainId": 1001,  # Exemplo de ID para a blockchain própria do LittleBoy Token
+    "address": "Oj3WD...92f3",  # Endereço de contrato real do seu token na blockchain própria
+    "symbol": "LBY",  # Símbolo do token
+    "name": "LittleBoy Token",  # Nome do token
+    "decimals": 18,  # Número de casas decimais
+    "logoURI": "https://github.com/liroboy/liroboy-LBY/raw/liroboy/001.jpg",  # URL do logo
+    "tags": ["LBY", "LittleBoyBlockchain", "ERC20-like"]  # Tags, adaptadas para a blockchain própria
 }
+
+# Salvando os dados no arquivo JSON
+with open("token-info.json", "w") as json_file:
+    json.dump(token_data, json_file, indent=4)
+
+print("Arquivo JSON gerado com sucesso!")
