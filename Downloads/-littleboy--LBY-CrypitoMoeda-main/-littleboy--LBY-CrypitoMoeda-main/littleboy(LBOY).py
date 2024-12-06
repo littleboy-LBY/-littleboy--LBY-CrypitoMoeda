@@ -111,12 +111,8 @@ class MinerThread(QtCore.QThread):
                     response = requests.get(url)
                     if response.status_code == 200:
                         block_info = response.json()
-                        print(f"Bloco minerado com sucesso!")
-                        print(f"Índice do Bloco: {block_info['index']}")
-                        print(f"Hash do Bloco Anterior: {block_info['previous_hash']}")
-                        print(f"Dificuldade: {block_info['difficulty']}")
-                        print(f"Prova: {block_info['proof']}")
-                        print(f"Transações: {block_info['transactions']}")
+                        print(f"Bloco minerado: {block_info}")
+                        self.block_mined.emit(block_info['index'], block_info['previous_hash'])
                     else:
                         print(f"Erro ao minerar: {response.status_code}")
                 except Exception as e:
