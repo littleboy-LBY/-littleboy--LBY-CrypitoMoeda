@@ -95,7 +95,7 @@ def generate_qr_code():
     return send_file(qr_image, mimetype='image/png')
     
 class MinerThread(QtCore.QThread):
-    block_mined = QtCore.pyqtSignal(int, str)
+    block_mined = QtCore.pyqtSignal(int, str)  # Sinal com 2 parâmetros (índice e hash do bloco anterior)
 
     def __init__(self):
         super().__init__()
@@ -109,10 +109,21 @@ class MinerThread(QtCore.QThread):
                     # A interpolação correta da variável miner_address
                     url = f'http://127.0.0.1:5000/mine?miner={self.miner_address}'
                     response = requests.get(url)
+
                     if response.status_code == 200:
                         block_info = response.json()
-                        print(f"Bloco minerado: {block_info}")
-                        self.block_mined.emit(block_info['index'], block_info['previous_hash'])
+                        print(f"Bloco minerado com sucesso!")
+                        print(f"Índice do Bloco: {block_info['index']}")
+                        print(f"Hash do Bloco Anterior: {block_info['previous_hash']}")
+                        print(f"Dificuldade: {block_info['difficulty']}")
+                        print(f"Prova: {block_info['proof']}")
+                        print(f"Transações: {block_info['transactions']}")
+
+                        # Emitir o sinal com 2 parâmetros (índice e hash do bloco anterior)
+                        self.block_mined.emit(
+                            block_info['index'],
+                            block_info['previous_hash']
+                        )
                     else:
                         print(f"Erro ao minerar: {response.status_code}")
                 except Exception as e:
