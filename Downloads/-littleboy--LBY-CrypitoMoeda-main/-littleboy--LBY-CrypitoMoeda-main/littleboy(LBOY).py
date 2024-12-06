@@ -1,26 +1,14 @@
 import sys
-import requests
 import qrcode
-from PyQt5 import QtWidgets, QtCore
 from PyQt5.QtGui import QPixmap
-from PyQt5.QtWidgets import QVBoxLayout, QLabel, QPushButton, QWidget, QScrollArea, QLineEdit
-from io import BytesIO
 import os
-import sys
-import sys
 import requests
-import qrcode
 from flask import Flask, jsonify, request, send_file
-from PyQt5 import QtWidgets, QtCore
 from PyQt5.QtGui import QPixmap
 from PyQt5.QtWidgets import QVBoxLayout, QLabel, QPushButton, QWidget, QScrollArea, QLineEdit
-from io import BytesIO
 import os
-import random
-import numpy as np
 import socket
 from flask import Flask, jsonify, request
-import qrcode
 from PyQt5 import QtWidgets, QtCore
 from PyQt5.QtGui import QPixmap
 from io import BytesIO
@@ -31,6 +19,8 @@ from PyQt5.QtGui import QClipboard
 from PyQt5 import QtWidgets
 from PyQt5.QtWidgets import QLabel, QPushButton, QVBoxLayout
 from PyQt5.QtGui import QClipboard
+from PyQt5.QtGui import QPixmap, QClipboard
+from flask import Flask, jsonify, request
 
 app = Flask(__name__)
 
@@ -51,6 +41,12 @@ def local_ip():
     ip = get_local_ip()
     return jsonify({'local_ip': ip})
     
+def set_node_url(self):
+    self.node_url = self.node_input.text()
+    if self.node_url:
+        self.create_wallet_btn.setEnabled(True)
+    else:
+        QtWidgets.QMessageBox.warning(self, "Erro", "Por favor, insira um endereço de nó válido.")
 
 def random_qubit():
     """Gera um qubit aleatório em formato de vetor."""
