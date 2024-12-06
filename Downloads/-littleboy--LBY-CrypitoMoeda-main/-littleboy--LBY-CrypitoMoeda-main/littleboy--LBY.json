@@ -11,8 +11,3 @@ token_data = {
     "tags": ["LBY", "LittleBoyBlockchain", "ERC20-like"]  # Tags, adaptadas para a blockchain própria
 }
 
-# Salvando os dados no arquivo JSON
-with open("token-info.json", "w") as json_file:
-    json.dump(token_data, json_file, indent=4)
-
-print("Arquivo JSON gerado com sucesso!")
