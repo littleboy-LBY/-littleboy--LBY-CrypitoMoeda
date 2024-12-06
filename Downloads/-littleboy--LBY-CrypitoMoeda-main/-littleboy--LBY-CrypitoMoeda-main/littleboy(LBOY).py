@@ -106,11 +106,17 @@ class MinerThread(QtCore.QThread):
         while True:
             if self.active:
                 try:
-                    response = requests.get(f'http://127.0.0.1:5000/mine?miner={self.miner_address}')
+                    # A interpolação correta da variável miner_address
+                    url = f'http://127.0.0.1:5000/mine?miner={self.miner_address}'
+                    response = requests.get(url)
                     if response.status_code == 200:
                         block_info = response.json()
-                        print(f"Bloco minerado: {block_info}")
-                        self.block_mined.emit(block_info['index'], block_info['previous_hash'])
+                        print(f"Bloco minerado com sucesso!")
+                        print(f"Índice do Bloco: {block_info['index']}")
+                        print(f"Hash do Bloco Anterior: {block_info['previous_hash']}")
+                        print(f"Dificuldade: {block_info['difficulty']}")
+                        print(f"Prova: {block_info['proof']}")
+                        print(f"Transações: {block_info['transactions']}")
                     else:
                         print(f"Erro ao minerar: {response.status_code}")
                 except Exception as e:
@@ -128,6 +134,7 @@ class MinerThread(QtCore.QThread):
 
     def stop_mining(self):
         self.active = False
+        
 
 class QrCodeViewer(QtWidgets.QWidget):
     def __init__(self, qr_data):
