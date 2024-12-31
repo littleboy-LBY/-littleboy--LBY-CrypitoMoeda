@@ -21,6 +21,43 @@ from PyQt5.QtWidgets import QLabel, QPushButton, QVBoxLayout
 from PyQt5.QtGui import QClipboard
 from PyQt5.QtGui import QPixmap, QClipboard
 from flask import Flask, jsonify, request
+import pyopencl as cl
+import numpy as np
+
+# Configurações de OpenCL
+platform = cl.get_platforms()[0]  # Pega a primeira plataforma
+device = platform.get_devices()[0]  # Pega o primeiro dispositivo (GPU ou CPU)
+context = cl.Context([device])
+queue = cl.CommandQueue(context)
+
+# Código do Kernel OpenCL (aqui pode ser o código de mineração)
+kernel_code = """
+__kernel void add(__global const float* A, __global const float* B, __global float* C) {
+    int i = get_global_id(0);
+    C[i] = A[i] + B[i];
+}
+"""
+
+# Compilando o Kernel
+program = cl.Program(context, kernel_code).build()
+
+# Dados de entrada para o Kernel
+A = np.random.rand(1000).astype(np.float32)
+B = np.random.rand(1000).astype(np.float32)
+C = np.empty_like(A)
+
+# Buffers de memória para os dados
+buffer_A = cl.Buffer(context, cl.mem_flags.READ_ONLY | cl.mem_flags.COPY_HOST_PTR, hostbuf=A)
+buffer_B = cl.Buffer(context, cl.mem_flags.READ_ONLY | cl.mem_flags.COPY_HOST_PTR, hostbuf=B)
+buffer_C = cl.Buffer(context, cl.mem_flags.WRITE_ONLY, C.nbytes)
+
+# Executando o Kernel
+program.add(queue, A.shape, None, buffer_A, buffer_B, buffer_C)
+
+# Copiando o resultado de volta para a memória do host
+cl.enqueue_copy(queue, C, buffer_C).wait()
+
+print(C)  # Exibindo os resultados
 
 app = Flask(__name__)
 
@@ -93,7 +130,13 @@ def generate_qr_code():
     qr.save(qr_image, 'PNG')
     qr_image.seek(0)
     return send_file(qr_image, mimetype='image/png')
-    
+   
+import time
+import hashlib
+import requests
+from multiprocessing import Pool
+from PyQt5 import QtCore
+
 class MinerThread(QtCore.QThread):
     block_mined = QtCore.pyqtSignal(int, str)  # Sinal com 2 parâmetros (índice e hash do bloco anterior)
 
@@ -101,37 +144,88 @@ class MinerThread(QtCore.QThread):
         super().__init__()
         self.active = False
         self.miner_address = ''
+        self.retry_count = 0  # Tentativas de reconexão
+
+    def mine_block(self):
+        """ Método para minerar um bloco com conexão ao servidor. """
+        try:
+            # A interpolação correta da variável miner_address
+            url = f'http://127.0.0.1:5000/mine?miner={self.miner_address}'
+            response = requests.get(url)
+
+            if response.status_code == 200:
+                block_info = response.json()
+                print(f"Bloco minerado com sucesso!")
+                print(f"Índice do Bloco: {block_info['index']}")
+                print(f"Hash do Bloco Anterior: {block_info['previous_hash']}")
+                print(f"Dificuldade: {block_info['difficulty']}")
+                print(f"Prova: {block_info['proof']}")
+                print(f"Transações: {block_info['transactions']}")
+
+                # Emitir o sinal com 2 parâmetros (índice e hash do bloco anterior)
+                self.block_mined.emit(
+                    block_info['index'],
+                    block_info['previous_hash']
+                )
+                self.retry_count = 0  # Resetar a contagem de tentativas após sucesso
+            elif response.status_code == 503:
+                print("Erro 503: Servidor temporariamente indisponível. Tentando novamente em 30 segundos...")
+                self.retry_count += 1
+                if self.retry_count > 5:
+                    print("Muitas tentativas falhadas, aguardando 60 segundos antes de tentar novamente...")
+                    time.sleep(60)  # Atraso maior após múltiplas falhas
+                else:
+                    time.sleep(30)  # Atraso entre tentativas
+            else:
+                print(f"Erro ao minerar: {response.status_code}")
+                self.retry_count += 1
+                if self.retry_count > 5:
+                    print("Muitas tentativas falhadas, aguardando 30 segundos antes de tentar novamente...")
+                    time.sleep(30)
+                else:
+                    time.sleep(5)
+        except requests.exceptions.RequestException as e:
+            print(f"Erro na conexão: {e}")
+            self.retry_count += 1
+            if self.retry_count > 5:
+                print("Muitas falhas de conexão, aguardando 30 segundos antes de tentar novamente...")
+                time.sleep(30)
+            else:
+                time.sleep(5)
+
+    def cpu_mining(self, difficulty):
+        """ Método para mineração usando a CPU com multiprocessing. """
+        prefix = '0' * difficulty  # Definindo a dificuldade
+        pool = Pool()  # Usando Pool para realizar o paralelismo
+
+        # Tentando minerar múltiplos hashes simultaneamente
+        nonces = list(range(1000000, 2000000))  # Geração de múltiplos nonces
+        results = pool.map(self.try_hash, [(nonce, prefix) for nonce in nonces])
+
+        for result in results:
+            if result:
+                return result
+
+    def try_hash(self, args):
+        """ Método para tentar um hash dado um nonce. """
+        nonce, prefix = args
+        block_data = f'{self.miner_address}{nonce}'.encode('utf-8')
+        block_hash = hashlib.sha256(block_data).hexdigest()
+
+        if block_hash.startswith(prefix):
+            return block_hash
+        return None
 
     def run(self):
+        """ Método que gerencia a execução do minerador. """
         while True:
             if self.active:
-                try:
-                    # A interpolação correta da variável miner_address
-                    url = f'http://127.0.0.1:5000/mine?miner={self.miner_address}'
-                    response = requests.get(url)
-
-                    if response.status_code == 200:
-                        block_info = response.json()
-                        print(f"Bloco minerado com sucesso!")
-                        print(f"Índice do Bloco: {block_info['index']}")
-                        print(f"Hash do Bloco Anterior: {block_info['previous_hash']}")
-                        print(f"Dificuldade: {block_info['difficulty']}")
-                        print(f"Prova: {block_info['proof']}")
-                        print(f"Transações: {block_info['transactions']}")
-
-                        # Emitir o sinal com 2 parâmetros (índice e hash do bloco anterior)
-                        self.block_mined.emit(
-                            block_info['index'],
-                            block_info['previous_hash']
-                        )
-                    else:
-                        print(f"Erro ao minerar: {response.status_code}")
-                except Exception as e:
-                    print(f"Erro na conexão: {e}")
-                finally:
-                    self.sleep(5)  # Ajuste o tempo de espera conforme necessário
+                self.mine_block()
+                block_hash = self.cpu_mining(difficulty=4)  # Defina a dificuldade conforme necessário
+                if block_hash:
+                    print(f"Bloco minerado localmente: {block_hash}")
             else:
-                self.sleep(1)
+                time.sleep(1)
 
     def start_mining(self, miner_address):
         self.miner_address = miner_address
@@ -141,8 +235,7 @@ class MinerThread(QtCore.QThread):
 
     def stop_mining(self):
         self.active = False
-        
-
+       
 class QrCodeViewer(QtWidgets.QWidget):
     def __init__(self, qr_data):
         super().__init__()
