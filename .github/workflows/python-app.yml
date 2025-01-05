@@ -1,7 +1,5 @@
-# This workflow will install Python dependencies, run tests and lint with a single version of Python
-# For more information see: https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-python
-
-name: Python Littleboy Application
+# Workflow para o projeto Littleboy
+name: Littleboy Python Application
 
 on:
   push:
@@ -10,7 +8,7 @@ on:
     branches: ["main"]
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   build:
@@ -31,18 +29,17 @@ jobs:
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
-        pip install flake8 pytest
-        if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+        pip install -r requirements.txt
 
     # Passo 4: Linting com flake8 (verificar erros de código)
     - name: Lint with flake8
       run: |
         # Interromper se houver erros de sintaxe críticos
         flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
-        # Checar a complexidade e tamanho das linhas, tratando erros como avisos
-        flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
+        # Verificar complexidade e tamanho das linhas
+        flake8 . --count --exit-zero --max-complexity=10 --max-line-length=100 --ignore=E203,W503 --statistics
 
     # Passo 5: Testar com pytest (executar testes automatizados)
     - name: Test with pytest
       run: |
-        pytest
+        pytest tests/
