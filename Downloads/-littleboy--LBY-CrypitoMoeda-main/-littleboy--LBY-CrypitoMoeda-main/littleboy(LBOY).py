@@ -136,6 +136,7 @@ import hashlib
 import pyopencl as cl  # Usando OpenCL para mineração na GPU (se configurado corretamente)
 import requests
 from PyQt5 import QtCore
+from tqdm import tqdm  # Adicionando para exibir a animação
 
 class MinerThread(QtCore.QThread):
     block_mined = QtCore.pyqtSignal(int, str)  # Sinal com 2 parâmetros (índice e hash do bloco anterior)
@@ -156,6 +157,8 @@ class MinerThread(QtCore.QThread):
                     response = requests.get(url)
 
                     if response.status_code == 200:
+                        self.exibir_animacao_mineracao()
+                        
                         block_info = response.json()
                         print(f"Bloco minerado com sucesso!")
                         print(f"Índice do Bloco: {block_info['index']}")
@@ -181,12 +184,11 @@ class MinerThread(QtCore.QThread):
                         print(f"Erro ao minerar: {response.status_code}")
                         self.retry_count += 1
 
-                        # Limite de tentativas antes de dar uma pausa maior
                         if self.retry_count > 5:
                             print("Muitas tentativas falhadas, aguardando 30 segundos antes de tentar novamente...")
-                            time.sleep(30)  # Pausa maior em caso de falhas consecutivas
+                            time.sleep(30)
                         else:
-                            time.sleep(5)  # Atraso padrão entre tentativas
+                            time.sleep(5)
                 except requests.exceptions.RequestException as e:
                     print(f"Erro na conexão: {e}")
                     self.retry_count += 1
@@ -197,6 +199,11 @@ class MinerThread(QtCore.QThread):
                         time.sleep(5)
             else:
                 time.sleep(1)
+
+    def exibir_animacao_mineracao(self):
+        """Exibe uma pá minerando ouro."""
+        for _ in tqdm(range(10), desc="⛏️ Minerando... 💰"):
+            time.sleep(0.1)
 
     def mine_locally(self, block_info):
         """Função para minerar localmente usando GPU ou CPU."""
