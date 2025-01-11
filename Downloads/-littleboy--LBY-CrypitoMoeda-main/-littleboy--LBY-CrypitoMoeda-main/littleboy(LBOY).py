@@ -202,8 +202,10 @@ class MinerThread(QtCore.QThread):
 
     def exibir_animacao_mineracao(self):
         """Exibe uma pá minerando ouro."""
-        for _ in tqdm(range(10), desc="⛏️ Minerando... 💰"):
-            time.sleep(0.1)
+        passos = 180  # Define o número de passos como 180 para 3 minutos
+        for _ in tqdm(range(passos), desc="⛏️ Minerando... 💰"):
+            time.sleep(1)  # Cada passo dura 1 segundo
+
 
     def mine_locally(self, block_info):
         """Função para minerar localmente usando GPU ou CPU."""
